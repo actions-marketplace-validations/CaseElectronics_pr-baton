@@ -1,0 +1,59 @@
+# This is the original "source" version of the workflow which we may use to test and
+# refine / adjust the workflow before consolidating it into the published combined
+# action at `action.yaml` in the root of this repository.
+
+name: PR Assignee Baton
+
+on:
+  pull_request:
+    types:
+      - review_requested
+  pull_request_review:
+    types:
+      - submitted
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  assign-baton:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assign PR to reviewer
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+          REVIEWER="${{ github.event.requested_reviewer.login }}"
+
+          if [ -z "$REVIEWER" ] || [ "$REVIEWER" = "copilot" ]; then
+            echo "Invalid or multiple reviewers - skipping assignment."
+            exit 0
+          fi
+
+          echo "Assigning PR #$PR_NUMBER to reviewer $REVIEWER"
+
+          gh api \
+            --method PATCH \
+            repos/$REPO/issues/$PR_NUMBER \
+            -f assignees[]="$REVIEWER"
+
+      - name: Assign PR back to author
+        if: github.event_name == 'pull_request_review'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+
+          echo "Assigning PR #$PR_NUMBER back to author $AUTHOR"
+
+          gh api \
+            --method PATCH \
+            repos/$REPO/issues/$PR_NUMBER \
+            -f assignees[]="$AUTHOR"
