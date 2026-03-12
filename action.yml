@@ -1,8 +1,7 @@
 name: PR Assignee Baton
 description: >
-  Passes the PR "baton" between reviewer and author.
-  When review is requested, assigns the PR to the reviewer.
-  When a review is submitted, assigns the PR back to the author.
+  Automatically sets the reviewer or author as PR
+  assignee when a review is requested or submitted.
 
 inputs:
   github-token:
